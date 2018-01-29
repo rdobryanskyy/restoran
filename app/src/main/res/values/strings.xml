@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">Restaurant</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password (optional)</string>
+    <string name="action_sign_in">Start</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+
+    <!-- Example settings for Data & Sync -->
+
+    <!-- Example settings for Notifications -->
+
+    <string name="date_time_details">Select Date and Time</string>
+    <string name="table_details">Select Table</string>
+    <string name="select_dishes">Select Dishes</string>
+    <string name="make_reservation">Make Reservation</string>
+    <string name="reservation_label">New reservation details</string>
+    <string name="modify_reservation">Modify reservation with ID</string>
+    <string name="save_shanges">Modify Reservation</string>
+    <item name="modify_reservation" type="id">Modifying reservation with id</item>
+    <string name="title_activity_edit_date">Set Reservation Time</string>
+    <string name="change_date">Set Reservation Date</string>
+    <string name="change_time">Set Reservation Time</string>
+    <string name="default_time">00:00</string>
+    <string name="default_date">01.01.2018</string>
+    <string name="now_dates">Now avalilabel time found. Try to check another date.</string>
+    <string name="select_date">Please selec a date first.</string>
+    <string name="title_activity_edit_table">Set Table</string>
+    <string name="default_persons">0</string>
+    <string name="change_num_person">Set number of persons</string>
+    <string name="title_activity_dishes_order">Select Dishes</string>
+    <string name="cancel_reservation">Cancel Reservation</string>
+    <string name="select_dish">Add at list one dish to your order</string>
+    <string name="new_reservation_tag">TAG_NEW_RESERVATION</string>
+    <string name="internal_application_error">Sorry, somethig went wrong...</string>
+    <string name="title_activity_reservation_list">List of Reservations</string>
+    <string name="select_reservation">Select reservation for modify</string>
+    <string name="chose_time">Choose a time</string>
+    <string name="get_num_pers">Set number of persons</string>
+</resources>

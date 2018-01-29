@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="fill_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.restaurant.activities.EditDateActivity"
+    tools:showIn="@layout/activity_edit_date">
+
+    <ProgressBar
+    android:id="@+id/date_progress"
+    style="?android:attr/progressBarStyleLarge"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:foregroundGravity="center"
+    android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/date_form"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/date_label"
+                style="?android:textAppearanceLarge"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/default_date" />
+
+            <Button
+                android:id="@+id/date_set"
+                style="?android:textAppearanceButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:onClick="onButtonClick"
+                android:text="@string/change_date"
+                />
+
+            <TextView
+                style="?android:textAppearanceLarge"
+                android:id="@+id/time_label"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/default_time" />
+
+            <Button
+                android:id="@+id/time_set"
+                style="?android:textAppearanceButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:onClick="onButtonClick"
+                android:text="@string/change_time"
+                />
+        </LinearLayout>
+
+</android.support.constraint.ConstraintLayout>
