@@ -28,21 +28,38 @@ public class DebugStrings
             "\t\n" +
             "</Menu>";
 
-    static String debugTimes = "<?xml version=\"1.0\"?>\n" +
-            "<Times>\n" +
-            "<Time>\n" +
-            "      <value>8</value>\n" +
-            "</Time>\n" +
-            "<Time>\n" +
-            "      <value>12</value>\n" +
-            "</Time>\n" +
-            "<Time>\n" +
-            "      <value>22</value>\n" +
-            "</Time>\n" +
-            "<Time>\n" +
-            "      <value>18</value>\n" +
-            "</Time>\n" +
-            "</Times>";
+    static String debugTimes = "<ArrayOfstring xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+            "<string>08:00</string>\n" +
+            "<string>08:30</string>\n" +
+            "<string>09:00</string>\n" +
+            "<string>09:30</string>\n" +
+            "<string>10:00</string>\n" +
+            "<string>10:30</string>\n" +
+            "<string>11:00</string>\n" +
+            "<string>11:30</string>\n" +
+            "<string>12:00</string>\n" +
+            "<string>12:30</string>\n" +
+            "<string>13:00</string>\n" +
+            "<string>13:30</string>\n" +
+            "<string>14:00</string>\n" +
+            "<string>14:30</string>\n" +
+            "<string>15:00</string>\n" +
+            "<string>15:30</string>\n" +
+            "<string>16:00</string>\n" +
+            "<string>16:30</string>\n" +
+            "<string>17:00</string>\n" +
+            "<string>17:30</string>\n" +
+            "<string>18:00</string>\n" +
+            "<string>18:30</string>\n" +
+            "<string>19:00</string>\n" +
+            "<string>19:30</string>\n" +
+            "<string>20:00</string>\n" +
+            "<string>20:30</string>\n" +
+            "<string>21:00</string>\n" +
+            "<string>21:30</string>\n" +
+            "<string>22:00</string>\n" +
+            "<string>22:30</string>\n" +
+            "</ArrayOfstring>";
 
     static String debugReservations = "<?xml version=\"1.0\"?>\n" +
             "<Reservations>\n" +

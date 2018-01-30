@@ -21,7 +21,6 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
 
 public class EditDateActivity extends AppCompatActivity {
 
@@ -32,7 +31,7 @@ public class EditDateActivity extends AppCompatActivity {
     View mTimeFormView;
     Date selectedDate;
     CheckTimeTask mCheckTimeTask;
-    ArrayList<Integer> mReservationTimes;
+    ArrayList<String> mReservationTimes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +39,14 @@ public class EditDateActivity extends AppCompatActivity {
         setContentView(R.layout.activity_edit_date);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        try {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+        catch(NullPointerException ex)
+        {
+            ex.printStackTrace();
+        }
 
         dateLabel = findViewById(R.id.date_label);
         timeLabel = findViewById(R.id.time_label);
@@ -122,26 +127,23 @@ public class EditDateActivity extends AppCompatActivity {
                 AlertDialog.Builder builder = new AlertDialog.Builder(EditDateActivity.this);
                 builder.setTitle(getString(R.string.chose_time));
 
+                String[] mStringArray = new String[mReservationTimes.size()];
+                mStringArray = mReservationTimes.toArray(mStringArray);
 
-                String[] times = new String[mReservationTimes.size()];
-
-                Integer ct = 0;
-                for (Integer hour: mReservationTimes)
-                {
-                    times[ct++] =  String.format("%d:00",hour);
-                }
-
-                builder.setItems(times, new DialogInterface.OnClickListener() {
+                builder.setItems(mStringArray, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which)
                     {
-                        Integer selectedTime = mReservationTimes.get(which);
+
+                        String selectedTime = mReservationTimes.get(which);
+                        String[] parts = selectedTime.split("\\:");
+
                         Calendar newDate = Calendar.getInstance();
                         newDate.setTime(selectedDate);
                         newDate.set(newDate.get(Calendar.YEAR),
                                 newDate.get(Calendar.MONTH),
                                 newDate.get(Calendar.DAY_OF_MONTH),
-                                selectedTime, 0, 0);
+                                Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), 0);
                         selectedDate = newDate.getTime();
                         DoSetTimeStrings(selectedDate);
                     }

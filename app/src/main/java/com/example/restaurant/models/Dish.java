@@ -48,7 +48,7 @@ public class Dish
 
     public String getDishBrief()
     {
-        String brief = String.format("%s : price %s, id %s", getDishName(), getDishPrice(), getDishID());
+        String brief = String.format("%s : price %s", getDishName(), getDishPrice());
 
         return brief;
     }

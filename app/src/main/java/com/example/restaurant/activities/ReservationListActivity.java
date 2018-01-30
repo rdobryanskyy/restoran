@@ -31,10 +31,16 @@ public class ReservationListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_reservation_list);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        try {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+        catch(NullPointerException ex)
+        {
+            ex.printStackTrace();
+        }
 
-        mListReservations = (RecyclerView) findViewById(R.id.lv_dishes);
+        mListReservations = findViewById(R.id.lv_dishes);
 
         setupReservationsList();
     }

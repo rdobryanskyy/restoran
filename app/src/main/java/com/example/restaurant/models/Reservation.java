@@ -10,6 +10,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -21,6 +23,11 @@ public class Reservation
 
     protected String reservationID = null;
     Date reservationTime = null;
+
+    public String getCustomersEmail() {
+        return customer.getmEmail();
+    }
+
     Customer customer = null;
     List<OrderedDish> orderedDishes;
     Integer numOfVisitors = 0;
@@ -42,23 +49,32 @@ public class Reservation
 
     public static Reservation fromXML(Element element)
     {
-        String resID = XmlUtils.getXMLValue("id", element);
-        String strDate = XmlUtils.getXMLValue("date", element);
-        String strPersons = XmlUtils.getXMLValue("persons", element);
-        String strEmail = XmlUtils.getXMLValue("email", element);
+        String resID = XmlUtils.getXMLValue("Id", element);
+
+        String strPersons = XmlUtils.getXMLValue("Persons", element);
+        String strEmail = XmlUtils.getXMLValue("EMail", element);
         Reservation reservation  = new Reservation(resID, strEmail);
         reservation.setNumOfVisitors(Integer.parseInt(strPersons));
-        Date date = new Date();
-        reservation.setReservationTime(date);
+        String strDate = XmlUtils.getXMLValue("DateTime", element);
 
-        NodeList nList = element.getElementsByTagName("dish");
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            Date date = dateFormat.parse(strDate);
+            reservation.setReservationTime(date);
+        } catch (ParseException ex)
+        {
+            ex.printStackTrace();
+            reservation.setReservationTime(new Date());
+        }
+
+        NodeList nList = element.getElementsByTagName("OrderItem");
         for (int i=0; i< nList.getLength(); i++)
         {
             Node node = nList.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE)
             {
                 Element element2 = (Element) node;
-                String dishStr = XmlUtils.getXMLValue("id", element2);
+                String dishStr = XmlUtils.getXMLValue("Id", element2);
                 {
                     for(OrderedDish dish: reservation.getOrderedDishes())
                     {
@@ -134,29 +150,31 @@ public class Reservation
         return res;
     }
 
+    private String makeXMLTag(String tagName, String value)
+    {
+        return String.format("<%s>%s</%s>\r\n", tagName, value, tagName);
+    }
+
     @Override
     public String toString()
     {
-        String info = String.format("<id>%s</id><email>%s</email><date>%s</date><persons>%s</persons>",
-                reservationID,
-                customer.getmEmail(),
-                DateFormat.getDateTimeInstance().format(reservationTime),
-                numOfVisitors.toString());
-
         StringBuilder dishes = new StringBuilder();
         for(OrderedDish dish : orderedDishes)
         {
             if(dish.isSelected())
             {
-                String strDish = String.format("<Dish><id>%s</is></Dish>", dish.getDishID());
-                dishes.append(strDish);
+                dishes.append(makeXMLTag("OrderItem", makeXMLTag("DishId", dish.getDishID())));
             }
         }
-        String xmlDishes = dishes.toString();
-        info += xmlDishes;
-        String res = String.format("<Reservations>%s</Reservations>", info);
 
-        return res;
+        StringBuilder builder = new StringBuilder();
+        SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        builder.append(makeXMLTag("DateTime", dateFormat.format(reservationTime)));
+        builder.append(makeXMLTag("EMail", customer.getmEmail()));
+        builder.append(makeXMLTag("Items", dishes.toString()));
+        builder.append(makeXMLTag("Persons", numOfVisitors.toString()));
+
+        return makeXMLTag("Order", builder.toString());
     }
 
 }

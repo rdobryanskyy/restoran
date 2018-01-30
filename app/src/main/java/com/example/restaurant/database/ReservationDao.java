@@ -2,6 +2,7 @@ package com.example.restaurant.database;
 
 import android.util.Log;
 
+import com.example.restaurant.R;
 import com.example.restaurant.connection.ConnectionManager;
 import com.example.restaurant.models.Customer;
 import com.example.restaurant.models.Menu;
@@ -16,6 +17,7 @@ import java.util.List;
 
 public class ReservationDao {
 
+    private static final String TAG_NEW_RESERVATION = "TAG_NEW_RESERVATION";
     private static ReservationDao _instance = null;
 
     public enum AppMode
@@ -25,10 +27,27 @@ public class ReservationDao {
     };
 
     AppMode mode;
-    private HashMap<String, Reservation> Reservations;
-    private static final String TAG = "RestaurantDao";
-    private Menu mMenu;
+    HashMap<String, Reservation> Reservations;
+    static final String TAG = "RestaurantDao";
+    Menu mMenu;
+    String userID;
 
+    public String getUserID()
+    {
+        return userID;
+    }
+
+    public void setUserID(String userID) {
+        this.userID = userID;
+    }
+
+    public void Clear()
+    {
+        Reservations.clear();
+        mode = AppMode.Customer;
+        mMenu = null;
+        userID = null;
+    }
 
     public static ReservationDao getInstance()
     {
@@ -50,20 +69,6 @@ public class ReservationDao {
 
     public boolean RequestReservationForUser(String email, String password) {
 
-        try {
-            setReservations(ConnectionManager.Instance().GetReservationsForUser(email, password));
-
-        } catch (ConnectionManager.ConnectionException ex) {
-            Log.d(TAG, "Server Error: ", ex);
-            return false;
-        }
-
-        try {
-            mMenu = ConnectionManager.Instance().GetMenu();
-        }
-        catch (ConnectionManager.ConnectionException ex) {
-            Log.d(TAG, "Server Error: ", ex);
-        }
         if (password == null || password.isEmpty())
         {
             mode = AppMode.Customer;
@@ -72,18 +77,66 @@ public class ReservationDao {
         {
             mode = AppMode.Waiter;
         }
+        try {
+            if(mode == AppMode.Customer)
+            {
+//TEST
+//                email = "dummy@dummy.com";
+//TEST
+
+
+                setReservations(ConnectionManager.Instance().GetReservationsForUser(email));
+            }
+            else if (mode == AppMode.Waiter)
+            {
+//TEST
+//                email = "waiter";
+//                password = "waiter";
+//TEST
+                String userId = ConnectionManager.Instance().userAuth(email, password);
+                if(userId != null)
+                {
+                    setUserID(userId);
+                    setReservations(ConnectionManager.Instance().GetReservationsForWaiter(userId));
+                    return true;
+                }
+                return false;
+            }
+            else
+            {
+                return false;
+            }
+        } catch (ConnectionManager.ConnectionException ex) {
+            Log.d(TAG, "Server Error: ", ex);
+            return false;
+        }
+        try {
+            mMenu = ConnectionManager.Instance().GetMenu();
+        }
+        catch (ConnectionManager.ConnectionException ex) {
+            Log.d(TAG, "Server Error: ", ex);
+        }
         return true;
     }
 
 
-    public void CreateNewReservationWithID(String reservationID, String email) {
+
+
+    public String CreateNewReservationForUser(String email) {
         //replace with new, if exist
+        String reservationID =  String.format("%s:%s", TAG_NEW_RESERVATION, email);
         Reservation newReservation = new Reservation(reservationID, email);
         Reservations.put(reservationID, newReservation);
+        return reservationID;
     }
 
 
     public Menu getMenu() {
+
+        if(mMenu == null)
+        {
+            mMenu =ConnectionManager.Instance().GetMenu();
+        }
         return mMenu;
     }
 
@@ -107,30 +160,45 @@ public class ReservationDao {
         return new ArrayList<>(Reservations.values());
     }
 
-    private void setReservations(ArrayList<Reservation> mReservations) {
-        for (Reservation res : mReservations) {
-            Reservations.put(res.getReservationID(), res);
+    private void setReservations(ArrayList<Reservation> reservations)
+    {
+        if(reservations != null) {
+            for (Reservation res : reservations) {
+                Reservations.put(res.getReservationID(), res);
+            }
         }
     }
 
     private ReservationDao()
     {
         Reservations = new HashMap<>();
-        mMenu = ConnectionManager.Instance().GetMenu();
-
+        Clear();
     }
 
-    public boolean ApplyReservation(String reservationID)
+    public boolean ApplyReservation(String reservationID, String userID, String userEmail)
     {
-        return ConnectionManager.Instance().ApplyReservation(reservationID);
+        boolean isNewReservation = reservationID.contains(TAG_NEW_RESERVATION);
+        return ConnectionManager.Instance().ApplyReservation(reservationID, userID, userEmail, isNewReservation);
     }
 
-    public boolean CancelReservation(String reservationID)
+    public boolean CancelReservation(String reservationID, String userID, String userEmail)
     {
-        return ConnectionManager.Instance().CancelReservation(reservationID);
+        if(reservationID.contains(TAG_NEW_RESERVATION))
+        {//was a new reservation, just clean a data
+            Clear();
+        }
+        else {
+            boolean res = ConnectionManager.Instance().CancelReservation(reservationID, userID);
+            if (res)
+            {
+                Reservations.remove(reservationID);
+            }
+            return res;
+        }
+        return false;
     }
 
-    public ArrayList<Integer> GetReservationTimeForDate(Date datetime)
+    public ArrayList<String> GetReservationTimeForDate(Date datetime)
     {
         return ConnectionManager.Instance().GetReservationTimeForDate(datetime);
     }

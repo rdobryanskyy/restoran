@@ -27,8 +27,14 @@ public class EditTableActivity extends AppCompatActivity {
         setContentView(R.layout.activity_edit_table);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        try {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+        catch(NullPointerException ex)
+        {
+            ex.printStackTrace();
+        }
 
         mPersonsLabel = findViewById(R.id.persons_label);
         String reservationID = ExtrasUtils.GetReservationID(this);

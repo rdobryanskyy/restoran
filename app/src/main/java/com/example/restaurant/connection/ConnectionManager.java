@@ -7,6 +7,7 @@ import com.example.restaurant.database.ReservationDao;
 import com.example.restaurant.models.Dish;
 import com.example.restaurant.models.Menu;
 import com.example.restaurant.models.Reservation;
+import com.example.restaurant.utils.PasswordUtils;
 import com.example.restaurant.utils.XmlUtils;
 
 import org.w3c.dom.Document;
@@ -30,6 +31,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
@@ -42,12 +44,16 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public class ConnectionManager
 {
 
-    static  final  String connectionURL = "http://localhost/restaurant";
+    static  final  String connectionURL = "http://api-mob.biz-apps.ru/resto/RestrauntService.svc";
     static  final  String menuRequest = "/getMenu";
-    static  final  String timeRequest = "/getTime?";
-    static  final  String reservationsRequest = "/getReservations?";
-    static  final  String cancelRequest = "/cancelRequest?";
-    static  final  String makeRequest = "/makeRequest?";
+    static  final  String timeRequest = "/vacantTime?";
+    static  final  String reservationsRequest = "/getClientOrders?";
+    static  final  String reservationsWaiterRequest = "/getCurrentOrders?";
+    static  final  String authRequest = "/getAuth?";
+
+
+    static  final  String cancelRequest = "/delOrder?";
+    static  final  String makeRequest = "/addOrder?";
 
 
 
@@ -80,25 +86,21 @@ public class ConnectionManager
     protected ConnectionManager() {}
 
 
-
-    public ArrayList<Reservation> GetReservationsForUser(String email, String password) throws ConnectionException
+    private ArrayList<Reservation> ParseReservationsXML(String xml)
     {
-
-        String req = String.format("%suser=%s,pass=%s", reservationsRequest, email, (password == null ? "": password));
-        String timeXML = GetRequestForAddress(req);
-        if(timeXML != null)
+        if(xml != null)
         {
             ArrayList<Reservation> res = new ArrayList<Reservation>();
             try
             {
-                InputStream is = new ByteArrayInputStream(timeXML.getBytes(StandardCharsets.UTF_8.name()));
+                InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8.name()));
                 DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 
                 DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
                 Document doc = dBuilder.parse(is);
                 Element element=doc.getDocumentElement();
                 element.normalize();
-                NodeList nList = doc.getElementsByTagName("Reservation");
+                NodeList nList = doc.getElementsByTagName("Order");
 
                 for (int i=0; i< nList.getLength(); i++)
                 {
@@ -119,22 +121,35 @@ public class ConnectionManager
             }
 
         }
-
-
         return null;
     }
 
-
-    public ArrayList<Integer> GetReservationTimeForDate(Date dateTime)
+    public ArrayList<Reservation> GetReservationsForWaiter(String waiterID) throws ConnectionException
     {
+        String req = String.format("%suserId=%s", reservationsWaiterRequest, waiterID);
+        String reservationXML = GetRequestForAddress(req);
+        return ParseReservationsXML(reservationXML);
+    }
 
-        String req = String.format("%s%s", timeRequest, DateFormat.getDateInstance().format(dateTime));
-        String timeXML = GetRequestForAddress(timeRequest);
+
+    public ArrayList<Reservation> GetReservationsForUser(String email) throws ConnectionException
+    {
+        String req = String.format("%seMail=%s", reservationsRequest, email);
+        String reservationXML = GetRequestForAddress(req);
+        return ParseReservationsXML(reservationXML);
+    }
+
+
+    public ArrayList<String> GetReservationTimeForDate(Date dateTime)
+    {
+        SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        String req = String.format("%sdate=%s", timeRequest, dateFormat.format(dateTime));
+        String timeXML = GetRequestForAddress(req);
         if(timeXML != null)
         {
             try
             {
-                ArrayList<Integer> res = new ArrayList<Integer>();
+                ArrayList<String> res = new ArrayList<String>();
                 InputStream is = new ByteArrayInputStream(timeXML.getBytes(StandardCharsets.UTF_8.name()));
                 DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 
@@ -142,16 +157,14 @@ public class ConnectionManager
                 Document doc = dBuilder.parse(is);
                 Element element=doc.getDocumentElement();
                 element.normalize();
-                NodeList nList = doc.getElementsByTagName("Time");
+                NodeList nList = doc.getElementsByTagName("string");
 
                 for (int i=0; i< nList.getLength(); i++)
                 {
                     Node node = nList.item(i);
                     if (node.getNodeType() == Node.ELEMENT_NODE)
                     {
-                        Element element2 = (Element) node;
-                        String timStr = XmlUtils.getXMLValue("value", element2);
-                        res.add( Integer.parseInt(timStr));
+                        res.add( node.getFirstChild().getNodeValue() );
                     }
                 }
                 return res;
@@ -165,25 +178,37 @@ public class ConnectionManager
         return null;
     }
 
-    public boolean ApplyReservation(String reservationID)
+    public boolean ApplyReservation(String reservationID, String userID, String userEmail, boolean isNew)
     {
+            String xml = ReservationDao.getInstance().getReservationByID(reservationID).toString();
+            String subUrl = String.format("%seMail=%s&userId=%s&orderId=%s",
+                    makeRequest,
+                    (userEmail == null)? "": userEmail,
+                    (userID == null)? "": userID,
+                    (isNew)? "": reservationID);
 
-        String xml = ReservationDao.getInstance().getReservationByID(reservationID).toString();
-        String res = PostRequestForAddress( makeRequest + reservationID, xml);
-        if(res == null)
-        {
-            ReservationDao.getInstance().RemoveReservationWithID(reservationID);
-        }
-        return res == null;
+
+            String res = PostRequestForAddress( makeRequest + reservationID, xml);
+            if(res == null)
+            {
+                ReservationDao.getInstance().RemoveReservationWithID(reservationID);
+            }
+            return res == null;
     }
 
-    public boolean CancelReservation(String reservationID)
+    public boolean CancelReservation(String reservationID, String userID)
     {
-        String res = GetRequestForAddress(cancelRequest+reservationID);
+        StringBuilder builder = new StringBuilder();
+        builder.append(String.format("%sorderId=%s", cancelRequest, reservationID));
+        if(userID != null && !userID.isEmpty())
+        {
+            builder.append(String.format("&userId=%s", userID));
+        }
+
+        String res = GetRequestForAddress(builder.toString());
         if(res == null)
             ReservationDao.getInstance().RemoveReservationWithID(reservationID);
-
-        return  (res == null);
+        return  (res == null || res.isEmpty());
     }
 
     public Menu GetMenu()
@@ -197,112 +222,77 @@ public class ConnectionManager
     }
 
 
-    private String PostRequestForAddress(String addr, String xmlReq)
-    {
-        String url;
-        url = String.format("%s%s", connectionURL , addr);
-        String result;
-        HttpPostRequest postRequest = new HttpPostRequest();
-        try {
-            return  postRequest.execute(url, xmlReq).get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     private String GetRequestForAddress(String addr)
     {
-
-        if(addr.equals(menuRequest))
-        {
-            return DebugStrings.debugMenu;
-        }
-        if(addr.contains(timeRequest))
-        {
-            return DebugStrings.debugTimes;
-        }
-
-        if(addr.contains(reservationsRequest))
-        {
-            return DebugStrings.debugReservations;
-        }
-        if(addr.contains(cancelRequest))
-        {
-            return null;
-        }
-
         String url;
         url = String.format("%s%s", connectionURL , addr);
         String result;
         HttpGetRequest getRequest = new HttpGetRequest();
 
         try {
-            return  getRequest.execute(url).get();
-        } catch (InterruptedException e) {
+            return  getRequest.execute(url);
+        } catch (Exception e)
+        {
             e.printStackTrace();
-        } catch (ExecutionException e) {
+        }
+        return null;
+    }
+
+    private String PostRequestForAddress(String addr, String xml)
+    {
+        String url;
+        url = String.format("%s%s", connectionURL , addr);
+        String result;
+        HttpPostRequest getRequest = new HttpPostRequest();
+
+        try {
+            return  getRequest.execute(url, xml);
+        } catch (Exception e)
+        {
             e.printStackTrace();
         }
         return null;
     }
 
 
-    public class HttpPostRequest extends AsyncTask<String, String, String> {
-
-        public HttpPostRequest()
-        {
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
 
 
-        @Override
-        protected String doInBackground(String... params) {
+    public String userAuth(String email, String pass)
+    {
+        String passHash = PasswordUtils.MD5_Hash(pass);
+        if(passHash != null) {
+            String subUrl = String.format("%slogin=%s&password=%s", authRequest, email, passHash);
+            String authXML = GetRequestForAddress(subUrl);
+            if (authXML != null)
+            {
+                try {
+                    InputStream is = new ByteArrayInputStream(authXML.getBytes(StandardCharsets.UTF_8.name()));
+                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                    Document doc = dBuilder.parse(is);
+                    Element element = doc.getDocumentElement();
+                    element.normalize();
+                    if (element.getNodeType() == Node.ELEMENT_NODE)
+                    {
+                        return element.getFirstChild().getNodeValue();
+                    }
 
-            String urlString = params[0]; // URL to call
-            String data = params[1]; //data to post
-
-            OutputStream out = null;
-            try {
-
-                URL url = new URL(urlString);
-
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
-                out = new BufferedOutputStream(urlConnection.getOutputStream());
-
-                BufferedWriter writer = new BufferedWriter (new OutputStreamWriter(out, "UTF-8"));
-
-                writer.write(data);
-
-                writer.flush();
-
-                writer.close();
-
-                out.close();
-
-                urlConnection.connect();
-            } catch (Exception e) {
-
-                System.out.println(e.getMessage());
-
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
             }
-            return null;
         }
+        return null;
     }
 
-    public class HttpGetRequest extends AsyncTask<String, Void, String> {
+    private class HttpGetRequest {
         public static final String REQUEST_METHOD = "GET";
         public static final int READ_TIMEOUT = 1500;
         public static final int CONNECTION_TIMEOUT = 1500;
-        @Override
-        protected String doInBackground(String... params){
+        public String execute(String... params)
+        {
             String stringUrl = params[0];
             String result;
             String inputLine;
@@ -336,8 +326,34 @@ public class ConnectionManager
             }
             return result;
         }
-        protected void onPostExecute(String result){
-            super.onPostExecute(result);
+    }
+
+
+    public class HttpPostRequest {
+        public HttpPostRequest() {}
+        public String execute(String... params)
+        {
+            String urlString = params[0]; // URL to call
+            String data = params[1]; //data to post
+
+            OutputStream out = null;
+            try {
+
+                URL url = new URL(urlString);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                out = new BufferedOutputStream(urlConnection.getOutputStream());
+                BufferedWriter writer = new BufferedWriter (new OutputStreamWriter(out, "UTF-8"));
+                writer.write(data);
+                writer.flush();
+                writer.close();
+                out.close();
+                urlConnection.connect();
+            } catch (Exception e) {
+
+                System.out.println(e.getMessage());
+
+            }
+            return null;
         }
     }
 

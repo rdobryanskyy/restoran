@@ -27,8 +27,14 @@ public class DishesOrderActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dishes_order);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        try {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+        catch(NullPointerException ex)
+        {
+            ex.printStackTrace();
+        }
 
         mListDishes = findViewById(R.id.lv_dishes);
         String reservationID = ExtrasUtils.GetReservationID(this);

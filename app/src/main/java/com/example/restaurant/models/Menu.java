@@ -49,9 +49,9 @@ public class Menu
                 if (node.getNodeType() == Node.ELEMENT_NODE)
                 {
                     Element element2 = (Element) node;
-                    Dish newDish = new Dish(XmlUtils.getXMLValue("id", element2),
-                            XmlUtils.getXMLValue("name", element2),
-                            XmlUtils.getXMLValue("price", element2));
+                    Dish newDish = new Dish(XmlUtils.getXMLValue("Id", element2),
+                            XmlUtils.getXMLValue("Name", element2),
+                            XmlUtils.getXMLValue("Price", element2));
                     dishes.add(newDish);
                 }
             }

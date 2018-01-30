@@ -49,4 +49,5 @@
     <string name="select_reservation">Select reservation for modify</string>
     <string name="chose_time">Choose a time</string>
     <string name="get_num_pers">Set number of persons</string>
+    <string name="ask_2">Are you sure?</string>
 </resources>

@@ -282,8 +282,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                         if(reservationCount == 0)
                         {
                             //Create new reservation
-                            reservationID =  String.format("%s:%s", getString(R.string.new_reservation_tag), mEmail);
-                            ReservationDao.getInstance().CreateNewReservationWithID(reservationID, mEmail);
+                            reservationID = ReservationDao.getInstance().CreateNewReservationForUser(mEmail);
                         }
                         else if(reservationCount == 1)
                         {
@@ -312,6 +311,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = null;
             ProgressDialogUtil.showProgress(false, mLoginFormView, mProgressView);
         }
+    }
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        ReservationDao.getInstance().Clear();
     }
 }
 

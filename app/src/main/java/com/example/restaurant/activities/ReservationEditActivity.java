@@ -1,17 +1,15 @@
 package com.example.restaurant.activities;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.restaurant.R;
 import com.example.restaurant.database.ReservationDao;
@@ -41,7 +39,6 @@ public class ReservationEditActivity extends AppCompatActivity
         mSetTableButton = findViewById(R.id.table_details);
         mSetDishesButton = findViewById(R.id.dishes_details);
         mMakeReservationButton = findViewById(R.id.make_reservation);
-        //mMakeReservationButton.setEnabled(false);
         mLabel = findViewById(R.id.reservation_label);
         String reservationID = ExtrasUtils.GetReservationID(this);
         if(reservationID == null)
@@ -85,7 +82,7 @@ public class ReservationEditActivity extends AppCompatActivity
         {
             if(mTask == null) {
                 ProgressDialogUtil.showProgress(true, mEditForm, mEditProgress);
-                mTask = new ReservationApplyTask(mReservation.getReservationID(), false, this);
+                mTask = new ReservationApplyTask(mReservation, false, this);
                 mTask.execute((Void) null);
             }
         }
@@ -94,8 +91,8 @@ public class ReservationEditActivity extends AppCompatActivity
         {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-            builder.setTitle("Cancel Reservation");
-            builder.setMessage("Are you sure?");
+            builder.setTitle(getString(R.string.cancel_reservation));
+            builder.setMessage(getString(R.string.ask_2));
 
             builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
 
@@ -106,7 +103,7 @@ public class ReservationEditActivity extends AppCompatActivity
                     {
 
                         ProgressDialogUtil.showProgress(true, mEditForm, mEditProgress);
-                        mTask = new ReservationApplyTask(mReservation.getReservationID(), true, ReservationEditActivity.this);
+                        mTask = new ReservationApplyTask(mReservation, true, ReservationEditActivity.this);
                         mTask.execute((Void) null);
                     }
 
@@ -127,7 +124,9 @@ public class ReservationEditActivity extends AppCompatActivity
 
     boolean ValidateMakeReservationButton()
     {
-        return mReservation.isReservationValid();
+        if(mReservation != null)
+            return mReservation.isReservationValid();
+        return false;
     }
 
     @Override
@@ -148,13 +147,17 @@ public class ReservationEditActivity extends AppCompatActivity
     static public class ReservationApplyTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mReservationID;
+        private final String mUserID;
         private final boolean mCancel;
+        private final String mUserEmail;
         private final ReservationEditActivity mParent;
 
-        ReservationApplyTask(String reservation, boolean cancel, ReservationEditActivity parent) {
-            mReservationID = reservation;
+        ReservationApplyTask(Reservation reservation, boolean cancel, ReservationEditActivity parent) {
+            mReservationID = reservation.getReservationID();
             mCancel = cancel;
             mParent = parent;
+            mUserID = ReservationDao.getInstance().getUserID();
+            mUserEmail = reservation.getCustomersEmail();
         }
 
         @Override
@@ -164,11 +167,11 @@ public class ReservationEditActivity extends AppCompatActivity
 
             if(mCancel)
             {
-                res = ReservationDao.getInstance().CancelReservation(mReservationID);
+                res = ReservationDao.getInstance().CancelReservation(mReservationID, mUserID, mUserEmail);
             }
             else
             {
-                res = ReservationDao.getInstance().ApplyReservation(mReservationID);
+                res = ReservationDao.getInstance().ApplyReservation(mReservationID, mUserID, mUserEmail);
             }
             return res;
         }
