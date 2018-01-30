@@ -6,6 +6,7 @@ import android.util.Log;
 import com.example.restaurant.database.ReservationDao;
 import com.example.restaurant.models.Dish;
 import com.example.restaurant.models.Menu;
+import com.example.restaurant.models.OrderedDish;
 import com.example.restaurant.models.Reservation;
 import com.example.restaurant.utils.PasswordUtils;
 import com.example.restaurant.utils.XmlUtils;
@@ -34,6 +35,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -50,11 +52,9 @@ public class ConnectionManager
     static  final  String reservationsRequest = "/getClientOrders?";
     static  final  String reservationsWaiterRequest = "/getCurrentOrders?";
     static  final  String authRequest = "/getAuth?";
-
-
     static  final  String cancelRequest = "/delOrder?";
-    static  final  String makeRequest = "/addOrder?";
-
+    static  final  String makeRequest = "/setOrder";
+    static  final  String addOrderItem = "/addOrderItem?";
 
 
     public class ConnectionException extends RuntimeException
@@ -180,20 +180,72 @@ public class ConnectionManager
 
     public boolean ApplyReservation(String reservationID, String userID, String userEmail, boolean isNew)
     {
-            String xml = ReservationDao.getInstance().getReservationByID(reservationID).toString();
-            String subUrl = String.format("%seMail=%s&userId=%s&orderId=%s",
-                    makeRequest,
-                    (userEmail == null)? "": userEmail,
-                    (userID == null)? "": userID,
-                    (isNew)? "": reservationID);
+        String xml = ReservationDao.getInstance().getReservationByID(reservationID).toString();
 
+        String res = PostRequestForAddress( makeRequest, xml);
+        if(res != null)
+        {
+            try {
+                InputStream is = new ByteArrayInputStream(res.getBytes(StandardCharsets.UTF_8.name()));
+                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 
-            String res = PostRequestForAddress( makeRequest + reservationID, xml);
-            if(res == null)
-            {
-                ReservationDao.getInstance().RemoveReservationWithID(reservationID);
+                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                Document doc = dBuilder.parse(is);
+                Element element = doc.getDocumentElement();
+                element.normalize();
+                if (element.getNodeType() == Node.ELEMENT_NODE)
+                {
+                    String  orderID = element.getFirstChild().getNodeValue();
+
+                    List<OrderedDish> dishes = ReservationDao.getInstance().getReservationByID(reservationID).getOrderedDishes();
+
+                    for(OrderedDish dish : dishes)
+                    {
+                        if (!AddDishToOrder(dish.getDishID(), orderID))
+                            return false;
+                    }
+                    return true;
+                }
+
             }
-            return res == null;
+            catch (Exception ex )
+            {
+                ex.printStackTrace();
+            }
+
+        }
+        ReservationDao.getInstance().RemoveReservationWithID(reservationID);
+
+        return false;
+    }
+
+
+
+    private boolean AddDishToOrder(String dishID, String orderID)
+    {
+        String subUrl = String.format("%sorderId=%s&dishId=%s", addOrderItem, orderID, dishID);
+        String res = GetRequestForAddress(subUrl);
+        try {
+            InputStream is = new ByteArrayInputStream(res.getBytes(StandardCharsets.UTF_8.name()));
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(is);
+            Element element = doc.getDocumentElement();
+            element.normalize();
+            if (element.getNodeType() == Node.ELEMENT_NODE)
+            {
+                String  result = element.getFirstChild().getNodeValue();
+                return (result != null);
+            }
+        }
+        catch (Exception ex )
+        {
+            ex.printStackTrace();
+        }
+
+        return false;
+
     }
 
     public boolean CancelReservation(String reservationID, String userID)
@@ -243,10 +295,10 @@ public class ConnectionManager
         String url;
         url = String.format("%s%s", connectionURL , addr);
         String result;
-        HttpPostRequest getRequest = new HttpPostRequest();
+        HttpPostRequest postRequest = new HttpPostRequest();
 
         try {
-            return  getRequest.execute(url, xml);
+            return  postRequest.execute(url, xml);
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -331,29 +383,60 @@ public class ConnectionManager
 
     public class HttpPostRequest {
         public HttpPostRequest() {}
+        public static final String REQUEST_METHOD = "POST";
+        public static final int READ_TIMEOUT = 1500;
+        public static final int CONNECTION_TIMEOUT = 1500;
         public String execute(String... params)
         {
             String urlString = params[0]; // URL to call
             String data = params[1]; //data to post
-
+            String inputLine;
             OutputStream out = null;
+            String result = null;
             try {
 
                 URL url = new URL(urlString);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod(REQUEST_METHOD);
+                urlConnection.setReadTimeout(READ_TIMEOUT);
+                urlConnection.setConnectTimeout(CONNECTION_TIMEOUT);
+                urlConnection.setRequestProperty("Content-Type", "application/xml; charset=utf-8");
+
                 out = new BufferedOutputStream(urlConnection.getOutputStream());
                 BufferedWriter writer = new BufferedWriter (new OutputStreamWriter(out, "UTF-8"));
                 writer.write(data);
                 writer.flush();
                 writer.close();
                 out.close();
-                urlConnection.connect();
-            } catch (Exception e) {
 
+                InputStream inputStream = null;
+
+                int status = urlConnection.getResponseCode();
+
+                if (status != HttpURLConnection.HTTP_OK)
+                {
+                    inputStream = urlConnection.getErrorStream();
+                }
+                else
+                {
+                    inputStream = urlConnection.getInputStream();
+                }
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder stringBuilder = new StringBuilder();
+                while((inputLine = reader.readLine()) != null)
+                {
+                    stringBuilder.append(inputLine);
+                }
+                reader.close();
+                inputStream.close();
+                result = stringBuilder.toString();
+                urlConnection.disconnect();
+            } catch (Exception e)
+            {
                 System.out.println(e.getMessage());
-
+                result = null;
             }
-            return null;
+            return result;
         }
     }
 

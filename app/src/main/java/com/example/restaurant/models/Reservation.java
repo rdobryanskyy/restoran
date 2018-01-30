@@ -32,6 +32,11 @@ public class Reservation
     List<OrderedDish> orderedDishes;
     Integer numOfVisitors = 0;
 
+    List<OrderedDish> previousDishes;
+
+
+    public void InitPrevDishes()
+    {}
 
     public Reservation(String id, String email)
     {
@@ -86,6 +91,7 @@ public class Reservation
                 }
             }
         }
+
         return reservation;
     }
 
@@ -155,26 +161,40 @@ public class Reservation
         return String.format("<%s>%s</%s>\r\n", tagName, value, tagName);
     }
 
+//    @Override
+//    public String toString()
+//    {
+//        StringBuilder dishes = new StringBuilder();
+//        for(OrderedDish dish : orderedDishes)
+//        {
+//            if(dish.isSelected())
+//            {
+//                dishes.append(makeXMLTag("OrderItem", makeXMLTag("DishId", dish.getDishID())));
+//            }
+//        }
+//
+//        StringBuilder builder = new StringBuilder();
+//        SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+//        builder.append(makeXMLTag("DateTime", dateFormat.format(reservationTime)));
+//        builder.append(makeXMLTag("EMail", customer.getmEmail()));
+//        builder.append(makeXMLTag("Items", dishes.toString()));
+//        builder.append(makeXMLTag("Persons", numOfVisitors.toString()));
+//
+//        return makeXMLTag("Order", builder.toString());
+//    }
+
     @Override
     public String toString()
     {
-        StringBuilder dishes = new StringBuilder();
-        for(OrderedDish dish : orderedDishes)
-        {
-            if(dish.isSelected())
-            {
-                dishes.append(makeXMLTag("OrderItem", makeXMLTag("DishId", dish.getDishID())));
-            }
-        }
-
         StringBuilder builder = new StringBuilder();
+        builder.append("<Order xmlns=\"http://api-mob.biz-apps.ru\">");
         SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         builder.append(makeXMLTag("DateTime", dateFormat.format(reservationTime)));
         builder.append(makeXMLTag("EMail", customer.getmEmail()));
-        builder.append(makeXMLTag("Items", dishes.toString()));
         builder.append(makeXMLTag("Persons", numOfVisitors.toString()));
+        builder.append("</Order>");
 
-        return makeXMLTag("Order", builder.toString());
+        return  builder.toString();
     }
 
 }
